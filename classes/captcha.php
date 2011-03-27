@@ -107,6 +107,16 @@ class Captcha {
 	{
 		return $name && isset(static::${$name}) ? static::${$name} : false;
 	}
+
+	public static function check()
+	{
+		$captcha_keystring = \Session::get('captcha_keystring');
+		$post_keystring = \Input::post('keystring');
+		
+		if($post_keystring !== null && $captcha_keystring !== null && $captcha_keystring == $post_keystring) return true;
+
+		return false;
+	}
 	
 	public static function generate()
 	{
@@ -132,6 +142,9 @@ class Captcha {
 				}
 				if(!preg_match('/cp|cb|ck|c6|c9|rn|rm|mm|co|do|cl|db|qp|qb|dp|ww/', static::$keystring)) break;
 			}
+			
+			//Save to session
+			\Session::set('captcha_keystring', static::$keystring);
 		
 			$font_file = $fonts[mt_rand(0, count($fonts) - 1)];
 			$font = imagecreatefrompng($font_file);
@@ -311,25 +324,28 @@ class Captcha {
 			}
 		}
 		
-
-		header('Expires: Mon, 26 Jul 1997 05:00:00 GMT'); 
-		header('Cache-Control: no-store, no-cache, must-revalidate'); 
-		header('Cache-Control: post-check=0, pre-check=0', false); 
-		header('Pragma: no-cache');
 		
+		// Set no cache
+		//ToDo: test this 2 headers
+		///header("Cache-Control: no-store, no-cache, must-revalidate"); 
+		///header("Expires: " . date("r"));
+		\Output::set_header('Cache-Control', 'no-cache, no-store, max-age=0, must-revalidate');
+		\Output::set_header('Expires', 'Mon, 26 Jul 1997 05:00:00 GMT');
+		\Output::set_header('Pragma', 'no-cache');
+
 		if(function_exists('imagejpeg'))
 		{
-			header('Content-Type: image/jpeg');
+			\Output::set_header('Content-Type','image/jpeg');
 			imagejpeg($img2, null, static::$jpeg_quality);
 		}
 		else if(function_exists('imagegif'))
 		{
-			header('Content-Type: image/gif');
+			\Output::set_header('Content-Type','image/gif');
 			imagegif($img2);
 		}
 		else if(function_exists('imagepng'))
 		{
-			header('Content-Type: image/x-png');
+			\Output::set_header('Content-Type','image/x-png');
 			imagepng($img2);
 		}
 	}
